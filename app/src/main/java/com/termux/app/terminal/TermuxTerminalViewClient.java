@@ -355,6 +355,11 @@ public class TermuxTerminalViewClient extends TermuxTerminalViewClientBase {
         return false;
     }
 
+    @Override
+    public String getHorizontalSwipeSequence(boolean toLeft) {
+        return mActivity.getProperties().getSwipeSequence(toLeft);
+    }
+
 
 
     @Override

@@ -368,6 +368,13 @@ public final class TermuxPropertyConstants {
 
 
 
+    /** Defines the keys for the sequence written to the terminal on a horizontal swipe. Unset: swipes do nothing.
+     * Values use {@link java.util.Properties} escapes, so a Ctrl+B then `n` is written with the unicode escape for U+0002 followed by `n`. */
+    public static final String KEY_SWIPE_LEFT_SEQUENCE =  "swipe-left-sequence"; // Default: unset
+    public static final String KEY_SWIPE_RIGHT_SEQUENCE =  "swipe-right-sequence"; // Default: unset
+
+
+
     /** Defines the key for whether volume keys will behave as virtual or literal volume keys */
     public static final String KEY_VOLUME_KEYS_BEHAVIOUR =  "volume-keys"; // Default: "volume-keys"
 
@@ -430,6 +437,8 @@ public final class TermuxPropertyConstants {
         KEY_EXTRA_KEYS_STYLE,
         KEY_NIGHT_MODE,
         KEY_SOFT_KEYBOARD_TOGGLE_BEHAVIOUR,
+        KEY_SWIPE_LEFT_SEQUENCE,
+        KEY_SWIPE_RIGHT_SEQUENCE,
         KEY_VOLUME_KEYS_BEHAVIOUR
     ));
 

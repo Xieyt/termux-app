@@ -83,6 +83,9 @@ public final class TerminalView extends View {
     /** What was left in from scrolling movement. */
     float mScrollRemainder;
 
+    /** Finger travel of the current touch, for horizontal swipe detection (fork, FORK.md §2.A). */
+    private float mSwipeDx, mSwipeDy;
+
     /** If non-zero, this is the last unicode code point received if that was a combining character. */
     int mCombiningAccent;
 
@@ -142,6 +145,7 @@ public final class TerminalView extends View {
             @Override
             public boolean onUp(MotionEvent event) {
                 mScrollRemainder = 0.0f;
+                sendHorizontalSwipeIfAny();
                 if (mEmulator != null && mEmulator.isMouseTrackingActive() && !event.isFromSource(InputDevice.SOURCE_MOUSE) && !isSelectingText() && !scrolledWithFinger) {
                     // Quick event processing when mouse tracking is active - do not wait for check of double tapping
                     // for zooming.
@@ -177,6 +181,7 @@ public final class TerminalView extends View {
                     sendMouseEventCode(e, TerminalEmulator.MOUSE_LEFT_BUTTON_MOVED, true);
                 } else {
                     scrolledWithFinger = true;
+                    if (trackHorizontalSwipe(distanceX, distanceY)) return true;
                     distanceY += mScrollRemainder;
                     int deltaRows = (int) (distanceY / mRenderer.mFontLineSpacing);
                     mScrollRemainder = distanceY - deltaRows * mRenderer.mFontLineSpacing;
@@ -196,6 +201,7 @@ public final class TerminalView extends View {
             @Override
             public boolean onFling(final MotionEvent e2, float velocityX, float velocityY) {
                 if (mEmulator == null) return true;
+                if (isHorizontalSwipeEnabled() && isHorizontalSwipeDominant()) return true;
                 // Do not start scrolling until last fling has been taken care of:
                 if (!mScroller.isFinished()) return true;
 
@@ -237,6 +243,7 @@ public final class TerminalView extends View {
                 // ViewDragHelper: Ignoring pointerId=0 because ACTION_DOWN was not received for this pointer before ACTION_MOVE
                 // Commenting out the call to mGestureDetector.onTouchEvent(event) in GestureAndScaleRecognizer#onTouchEvent() removes
                 // the error logging, so issue is related to GestureDetector
+                mSwipeDx = mSwipeDy = 0;
                 return false;
             }
 
@@ -1517,4 +1524,42 @@ public final class TerminalView extends View {
         }
     }
 
+
+    /*
+     * Horizontal swipe (fork, FORK.md §2.A). Upstream ignores distanceX, so a sideways swipe does nothing.
+     * When the client supplies a sequence for the direction, a deliberate horizontal swipe writes it to
+     * the session. Only active while the app has mouse tracking on (tmux, herdr, vim): in a plain shell
+     * the sequence would be typed as text.
+     */
+
+    private boolean isHorizontalSwipeEnabled() {
+        return mEmulator != null && mEmulator.isMouseTrackingActive() && !isSelectingText()
+            && (mClient.getHorizontalSwipeSequence(true) != null || mClient.getHorizontalSwipeSequence(false) != null);
+    }
+
+    /** True once travel is clearly sideways, so the gesture is not also scrolled vertically. */
+    private boolean isHorizontalSwipeDominant() {
+        float ax = Math.abs(mSwipeDx), ay = Math.abs(mSwipeDy);
+        return ax > 2 * ay && ax > ViewConfiguration.get(getContext()).getScaledTouchSlop();
+    }
+
+    /** Accumulates travel; returns true if the caller must skip vertical scrolling. */
+    private boolean trackHorizontalSwipe(float distanceX, float distanceY) {
+        mSwipeDx -= distanceX; // distance is previous minus current, so negate for finger travel
+        mSwipeDy -= distanceY;
+        return isHorizontalSwipeEnabled() && isHorizontalSwipeDominant();
+    }
+
+    private void sendHorizontalSwipeIfAny() {
+        float dx = mSwipeDx;
+        float minTravel = Math.max(4 * ViewConfiguration.get(getContext()).getScaledPagingTouchSlop(), getWidth() / 5f);
+        boolean fire = isHorizontalSwipeEnabled() && isHorizontalSwipeDominant()
+            && Math.abs(dx) >= minTravel && !mGestureRecognizer.isInProgress();
+        mSwipeDx = mSwipeDy = 0;
+        if (!fire || mTermSession == null) return;
+        String sequence = mClient.getHorizontalSwipeSequence(dx < 0);
+        if (sequence == null) return;
+        performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+        mTermSession.write(sequence);
+    }
 }

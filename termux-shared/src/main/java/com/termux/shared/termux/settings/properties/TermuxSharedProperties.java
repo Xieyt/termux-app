@@ -684,6 +684,13 @@ public abstract class TermuxSharedProperties {
         return (boolean) TermuxPropertyConstants.IVALUE_VOLUME_KEY_BEHAVIOUR_VOLUME.equals(getInternalPropertyValue(TermuxPropertyConstants.KEY_VOLUME_KEYS_BEHAVIOUR, true));
     }
 
+    /** The sequence for a horizontal swipe (fork, FORK.md §2.A), or {@code null} if unset or empty. */
+    public String getSwipeSequence(boolean toLeft) {
+        String key = toLeft ? TermuxPropertyConstants.KEY_SWIPE_LEFT_SEQUENCE : TermuxPropertyConstants.KEY_SWIPE_RIGHT_SEQUENCE;
+        String value = (String) getInternalPropertyValue(key, true);
+        return (value == null || value.isEmpty()) ? null : value;
+    }
+
 
 
 

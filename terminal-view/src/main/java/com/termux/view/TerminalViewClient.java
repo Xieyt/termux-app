@@ -5,6 +5,8 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 
+import androidx.annotation.Nullable;
+
 import com.termux.terminal.TerminalSession;
 
 /**
@@ -35,6 +37,17 @@ public interface TerminalViewClient {
     boolean shouldUseCtrlSpaceWorkaround();
 
     boolean isTerminalViewSelected();
+
+    /**
+     * The sequence to write to the session for a horizontal swipe, or {@code null} to leave swipes
+     * alone (the default). Only consulted while the running program has mouse tracking enabled.
+     *
+     * @param toLeft {@code true} if the finger moved left, {@code false} if it moved right.
+     */
+    @Nullable
+    default String getHorizontalSwipeSequence(boolean toLeft) {
+        return null;
+    }
 
 
 
