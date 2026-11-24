@@ -1,0 +1,44 @@
+# Upstream's Build/Unit tests workflows only run on `master`, and this fork's working branch is
+# `develop` (FORK.md §1). A separate file, not an edit to upstream's, so it never conflicts in a sync.
+name: fork build
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  build:
+    # Never on upstream.
+    if: github.repository != 'termux/termux-app'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v6
+
+      - name: Setup java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Unit tests
+        run: ./gradlew test
+
+      - name: Build debug APKs
+        env:
+          # Must match the bootstrap variant already installed on the device (app/build.gradle).
+          TERMUX_PACKAGE_VARIANT: apt-android-7
+        run: |
+          base="$(grep -m 1 -E '^\s+versionName "' app/build.gradle | sed -E 's/.*"([^"]+)".*/\1/')"
+          ver="$base+${GITHUB_SHA:0:7}"
+          export TERMUX_APP_VERSION_NAME="$ver"
+          export TERMUX_APK_VERSION_TAG="v$ver-apt-android-7-fork-debug"
+          ./gradlew assembleDebug
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v6
+        with:
+          name: termux-fork-debug-apt-android-7
+          path: app/build/outputs/apk/debug/*.apk
