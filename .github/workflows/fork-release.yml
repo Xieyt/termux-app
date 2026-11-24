@@ -1,0 +1,52 @@
+# Publishes a downloadable prerelease: the arm64-v8a APK only, built from the dispatched commit.
+# Run manually (Actions > fork release > Run workflow). A new file, never an edit to upstream's
+# workflows, so a sync never conflicts here (FORK.md §3).
+name: fork release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, e.g. v0.118.0-fork.1"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    # Never on upstream.
+    if: github.repository != 'termux/termux-app'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v6
+
+      - name: Setup java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build debug APKs
+        env:
+          # Must match the bootstrap variant already installed on the device (app/build.gradle).
+          TERMUX_PACKAGE_VARIANT: apt-android-7
+        run: |
+          base="$(grep -m 1 -E '^\s+versionName "' app/build.gradle | sed -E 's/.*"([^"]+)".*/\1/')"
+          ver="$base+${GITHUB_SHA:0:7}"
+          export TERMUX_APP_VERSION_NAME="$ver"
+          export TERMUX_APK_VERSION_TAG="v$ver-apt-android-7-fork-debug"
+          ./gradlew assembleDebug
+          cp "app/build/outputs/apk/debug/termux-app_${TERMUX_APK_VERSION_TAG}_arm64-v8a.apk" termux-fork-arm64-v8a.apk
+          sha256sum termux-fork-arm64-v8a.apk > termux-fork-arm64-v8a.apk.sha256
+
+      - name: Publish prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          gh release create "$TAG" termux-fork-arm64-v8a.apk termux-fork-arm64-v8a.apk.sha256 \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "$TAG" \
+            --notes "Fork build of \`$GITHUB_SHA\`, \`apt-android-7\` variant, arm64-v8a, signed with the public Termux test key. Read FORK.md section 6 before installing: it will not install over an F-Droid or Google Play Termux, and uninstalling Termux deletes its data."
