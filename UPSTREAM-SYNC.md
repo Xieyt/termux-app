@@ -42,5 +42,7 @@ Forked from `upstream/master` `8629e63` ("Update `dependency-submission` to `v6`
 `feat: horizontal swipe writes a configurable key sequence` (FORK.md §2.A) and the fork
 maintenance tooling. Nothing merged yet.
 
-Still unverified: everything on-device. The code was written without an Android SDK or JDK and has
-not been compiled; the first compile and test run happens in `.github/workflows/fork-build.yml`.
+Gates: `./gradlew test` and `assembleDebug` (apt-android-7) pass in CI, run 45341169718 on
+`54214459`. The code was written without a local Android SDK or JDK, so that run was its first compile.
+
+Still unverified: everything on-device (FORK.md §6 checklist).

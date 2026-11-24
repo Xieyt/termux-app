@@ -9,7 +9,7 @@ tripwire that runs by itself, and every sync written down.
 Read this before syncing with upstream or adding a local feature.
 
 > **Status, 2026-11-24:** forked at `upstream/master` `8629e63`, 0 commits behind. One feature
-> (§2.A). **Not yet verified on a device**: nothing here has been compiled or run (§6).
+> (§2.A). Compiles and passes `./gradlew test` in CI (§6); **not yet verified on a device**.
 
 ---
 
@@ -138,8 +138,8 @@ Conflicts land in the gesture listener in `TerminalView.java` and the property r
 
 ## 6. Building & verifying
 
-**There is no Android SDK or JDK on the machine this fork was written on**, so nothing has been
-compiled locally. The first compile happens in CI.
+**There is no Android SDK or JDK on the machine this fork was written on**, so nothing is compiled
+locally; CI is the compiler. The first CI run (`54214459`) passed tests and built the APKs.
 
 - `.github/workflows/fork-build.yml` (push to `develop`, or run manually) runs `./gradlew test` and
   `assembleDebug` for the **`apt-android-7`** variant and uploads the APKs as an artifact.
